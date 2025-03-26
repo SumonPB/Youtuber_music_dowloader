@@ -1,25 +1,56 @@
-from typing import Optional, Dict
-import yt_dlp
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+import os
 
-def obtener_url_actual() -> Optional[str]:
-    """Obtiene la URL de YouTube desde input"""
-    url = input("Ingresa la URL de YouTube (o 'salir' para terminar): ")
-    return url if url.lower() != "salir" else None
+def iniciar_monitor():
+    """Monitor optimizado para evitar duplicados"""
+    # Configuración de Brave
+    brave_path = "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe"
+    chromedriver_path = os.path.join(os.getcwd(), "backend", "core", "chromedriver.exe")
+    
+    options = Options()
+    options.binary_location = brave_path
+    options.add_argument("--disable-notifications")
+    options.add_argument("--remote-debugging-port=9222")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--no-sandbox")
+    
+    # Usar perfil existente
+    user_data = os.path.join(os.getenv('LOCALAPPDATA'), 'BraveSoftware', 'Brave-Browser', 'User Data')
+    options.add_argument(f"user-data-dir={user_data}")
+    options.add_argument("profile-directory=Default")
 
-def obtener_info_cancion(url: str) -> Dict[str, str]:
-    """Obtiene información de la canción con manejo de errores"""
-    ydl_opts = {
-        'quiet': True,
-        'extract_flat': False,  # Cambiado a False para obtener metadatos completos
-        'force_generic_extractor': True  # Para manejar mejor URLs especiales
-    }
+    service = Service(executable_path=chromedriver_path)
+    driver = webdriver.Chrome(service=service, options=options)
     
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            # Extraer título o usar un valor por defecto
-            titulo = info.get('title', f"video_sin_titulo_{info['id']}")
-            return {"name": titulo, "url": url}
+        driver.get("https://www.youtube.com")
+        print("🔍 Monitoreando YouTube...")
+        ultima_url = None
+        
+        while True:
+            WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "video"))
+            )
+            current_url = driver.current_url
+            
+            if "watch?v=" in current_url:
+                url_limpia = current_url.split('&list=')[0].split('&t=')[0]
+                
+                # Evitar duplicados consecutivos
+                if url_limpia != ultima_url:
+                    print(f"🎵 URL detectada: {url_limpia}")
+                    ultima_url = url_limpia
+                    yield url_limpia
+                    
+            time.sleep(5)
+            
     except Exception as e:
-        print(f"⚠ Error al procesar {url}: {str(e)}")
-        return {"name": "error_al_obtener_titulo", "url": url}
+        print(f"⚠️ Error en el monitor: {str(e)}")
+    finally:
+        driver.quit()
