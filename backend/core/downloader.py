@@ -37,3 +37,19 @@ def descargar_audio(url: str, output_dir: str = "downloads") -> Path:
     except Exception as e:
         print(f"❌ Error al descargar {url}: {str(e)}")
         raise
+
+def obtener_info_video(url: str) -> dict:
+    """Obtiene información del video sin descargarlo"""
+    ydl_opts = {
+        'quiet': True,
+        'no_warnings': True,
+        'extract_flat': True
+    }
+    
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        return {
+            'titulo': info.get('title', 'Sin título'),
+            'url': url,
+            'duracion': info.get('duration', 0)
+        }

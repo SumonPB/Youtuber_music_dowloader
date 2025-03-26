@@ -5,7 +5,8 @@ import json  # Importación faltante
 from tkinter import messagebox
 from datetime import datetime
 from backend.core.monitor import iniciar_monitor
-from backend.core.downloader import descargar_audio  # Importación clave
+from backend.core.downloader import descargar_audio,obtener_info_video  # Importación clave
+from backend.core.utils import es_url_nueva  # Importación clave
 
 class YouTubeDownloaderApp(ctk.CTk):
     def __init__(self):
@@ -31,6 +32,10 @@ class YouTubeDownloaderApp(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         
+        ctk.set_appearance_mode("Dark")
+        ctk.set_default_color_theme("blue")
+        
+
         main_frame = ctk.CTkFrame(self)
         main_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         main_frame.grid_rowconfigure(1, weight=1)
@@ -105,10 +110,21 @@ class YouTubeDownloaderApp(ctk.CTk):
             return []
     
     def guardar_historial(self):
-        """Guarda el historial en el archivo JSON"""
+        """Guarda el historial sin duplicados"""
+        # Combinar historial antiguo y nuevo, evitando duplicados
+        historial_actualizado = self.historial.copy()
+        urls_existentes = {item['url'] for item in historial_actualizado}
+
+        for song in self.current_songs:
+            if song['url'] not in urls_existentes:
+                historial_actualizado.append(song)
+                urls_existentes.add(song['url'])
+
+        # Guardar en JSON
         with open('historial.json', 'w') as f:
-            json.dump(self.historial, f, indent=2)
-    
+            json.dump(historial_actualizado, f, indent=2)
+        self.historial = historial_actualizado  # Actualizar en memoria
+
     def toggle_monitor(self):
         """Inicia o detiene el monitor"""
         self.monitor_active = not self.monitor_active
@@ -127,18 +143,34 @@ class YouTubeDownloaderApp(ctk.CTk):
             if not self.monitor_active:
                 break
             self.add_song(url)
-    
+    #-------------------------------------------------------
     def add_song(self, url):
-        """Añade solo la URL a la lista sin obtener metadatos"""
-        if not any(song['url'] == url for song in self.current_songs):
+        """Añade canción a la lista mostrando título y URL"""
+        try:
+            # Verificar si la URL es nueva
+            if not es_url_nueva(url, self.historial, self.current_songs):
+                print(f"⚠️ URL ya existe: {url}")
+                return
+
+            # Obtener información del video
+            info = obtener_info_video(url)
+    
+            # Agregar a la lista
             song_data = {
                 'url': url,
-                'date': datetime.now().isoformat()
+                'titulo': info['titulo'],
+                'duracion': info['duracion'],
+                'fecha': datetime.now().isoformat()
             }
             self.current_songs.append(song_data)
+    
+            # Actualizar interfaz
             self.update_song_list()
             self.update_status()
-
+    
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo obtener información: {str(e)}")
+    #-------------------------------------------------------
         
     def add_manual_url(self):
         """Añade una URL manualmente"""
@@ -147,44 +179,44 @@ class YouTubeDownloaderApp(ctk.CTk):
             self.add_song(url)
             self.url_entry.delete(0, "end")
     #-------------------------------------------------------
-
+    #-------------------------------------------------------
     def update_song_list(self):
-    
-        try:
-            # Destruir el frame existente de manera segura
-            for widget in self.song_list.winfo_children():
-                try:
-                    widget.destroy()
-                except:
-                    continue
-        
-            # Crear nuevos elementos
-            for idx, song in enumerate(self.current_songs):
-                try:
-                    frame = ctk.CTkFrame(self.song_list)
-                    frame.pack(fill="x", pady=2)
-                
-                    label = ctk.CTkLabel(frame, text=song['url'], anchor="w")
-                    label.pack(side="left", fill="x", expand=True, padx=5)
-                
-                    btn = ctk.CTkButton(
-                        frame,
-                        text="✖",
-                        width=30,
-                        command=lambda i=idx: self.remove_song(i),
-                        fg_color="transparent",
-                        hover_color="#d9534f",
-                        text_color="#d9534f"
-                    )
-                    btn.pack(side="right", padx=5)
-                
-                except Exception as e:
-                    print(f"Error creando elemento {idx}: {e}")
-                    continue
-                
-        except Exception as e:
-            print(f"Error grave al actualizar lista: {e}")
+        """Muestra título y URL en la lista de forma robusta"""
+        # Detener eventos pendientes (opcional)
+        self.song_list.update_idletasks()
 
+        # Limpiar lista actual
+        for widget in self.song_list.winfo_children():
+            widget.destroy()
+    
+        # Recrear la lista
+        for idx, song in enumerate(self.current_songs):
+            frame = ctk.CTkFrame(self.song_list)
+            frame.pack(fill="x", pady=5, padx=5)
+    
+            # Etiqueta con título y URL
+            label = ctk.CTkLabel(
+                frame, 
+                text=f"{song['titulo']}\n{song['url']}",
+                anchor="w",
+                justify="left"
+            )   
+            label.pack(side="left", fill="x", expand=True, padx=5)
+    
+            # Botón para eliminar (usa una función parcial con índice fijo)
+            btn = ctk.CTkButton(
+                frame,
+                text="✖",
+                width=30,
+                command=lambda idx=idx: self.after(100, self.remove_song, idx),  # ¡Clave! Usar `after`
+                fg_color="#d9534f",
+                hover_color="#c9302c"
+            )
+            btn.pack(side="right", padx=5)
+    
+        # Forzar actualización de la GUI
+        self.update()
+    #-------------------------------------------------------
     #-------------------------------------------------------        
     def remove_song(self, index):
         """Elimina una canción de la lista"""
@@ -200,29 +232,29 @@ class YouTubeDownloaderApp(ctk.CTk):
         self.update_status()
     #-------------------------------------------------------
     def download_all(self):
-        """Versión corregida del método de descarga"""
+        """Descarga manteniendo la información del título"""
         if not self.current_songs:
             messagebox.showwarning("Advertencia", "No hay canciones para descargar")
             return
     
         success_count = 0
-        download_folder = "downloads"
     
         for song in self.current_songs:
             try:
-                # Llamada correcta con un solo argumento (URL)
+                # Descargar el audio
                 archivo = descargar_audio(song['url'])
             
+                # Registrar en historial
                 self.historial.append({
                     'url': song['url'],
-                    'nombre': archivo.name,
-                    'fecha': datetime.now().isoformat(),
+                    'titulo': song['titulo'],
+                    'fecha': song['fecha'],
                     'ruta': str(archivo.resolve())
                 })
                 success_count += 1
             
             except Exception as e:
-                print(f"Error al descargar {song['url']}: {e}")
+                print(f"Error al descargar {song['titulo']}: {str(e)}")
     
         self.guardar_historial()
         self.clear_list()
