@@ -1,6 +1,6 @@
 # YouTube Music Downloader PRO 🎵
 
-![alt text](image-2.png)
+![alt text](image.png)
 
 Aplicación para descargar audio desde YouTube con interfaz intuitiva y monitoreo automático.
 
