@@ -1,2 +1,6 @@
+# requirements.txt
 yt-dlp>=2023.11.16
+customtkinter>=5.2.1
 requests>=2.31.0
+selenium>=4.10.0
+pillow>=10.0.1  # Usado por customtkinter

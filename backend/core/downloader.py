@@ -3,8 +3,8 @@ from pathlib import Path
 import subprocess
 import os
 
-def descargar_audio(url: str, output_dir: str = "downloads") -> Path:
-    """Descarga audio con parámetro opcional de directorio"""
+def descargar_audio(url: str, output_dir: str = "downloads", progress_hook=None) -> Path:
+    """Descarga audio con parámetro opcional de directorio y progreso"""
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': f'{output_dir}/%(title)s.%(ext)s',
@@ -17,11 +17,11 @@ def descargar_audio(url: str, output_dir: str = "downloads") -> Path:
         'quiet': True,
         'no_warnings': True,
         'ffmpeg_location': r'C:\ffmpeg\bin\ffmpeg.exe',
-        'retries': 3
+        'retries': 3,
+        'progress_hooks': [progress_hook] if progress_hook else []
     }
 
     try:
-        # Verificar FFmpeg
         subprocess.run(
             [ydl_opts['ffmpeg_location'], '-version'],
             check=True,
@@ -37,7 +37,7 @@ def descargar_audio(url: str, output_dir: str = "downloads") -> Path:
     except Exception as e:
         print(f"❌ Error al descargar {url}: {str(e)}")
         raise
-
+    
 def obtener_info_video(url: str) -> dict:
     """Obtiene información del video sin descargarlo"""
     ydl_opts = {
