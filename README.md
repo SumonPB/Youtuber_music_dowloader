@@ -1,80 +1,82 @@
 # YouTube Music Downloader PRO 🎵
 
-![App Screenshot](image.png)
+![App Screenshot](screenshot.png)
 
-Aplicación para descargar audio desde YouTube con interfaz intuitiva y funciones avanzadas.
+Aplicación para descargar audio desde YouTube con interfaz intuitiva.
 
 ## Características ✨
-- 🎶 Descarga automática al reproducir en navegador
+- 🎶 Monitoreo automático de reproducción en navegador
 - 📁 Selección de carpeta personalizada
-- 🎧 Calidad de audio 320kbps
+- 🎧 Calidad de audio configurable (64-320kbps)
 - 📊 Barra de progreso en tiempo real
-- 📚 Historial de descargas persistente
-- 🎨 Modo oscuro
+- 📚 Historial de descargas en JSON
+- 🎨 Temas oscuro/claro
 
 ## Requisitos 💻
 ```bash
 Python 3.8+
-yt-dlp >= 2023.7.6
+yt-dlp >= 2023.11.16
 customtkinter >= 5.2.1
+selenium >= 4.10.0
 FFmpeg (incluido en Windows)
-Instalación ⚙️
+```
+
+## Instalación ⚙️
+Clonar repositorio:
+
+```bash
+git clone https://github.com/tu-usuario/youtube-music-downloader.git
+cd youtube-music-downloader
+```
+
 Instalar dependencias:
 
-bash
-Copy
+```bash
 pip install -r requirements.txt
-Uso 🚀
-bash
-Copy
-python main.py
-Haz clic en "▶ Iniciar Monitor"
+```
 
-Reproduce música en tu navegador
+## Uso Básico 🚀
+```bash
+python main.py
+```
+
+Seleccionar carpeta destino (opcional)
+
+Iniciar monitor con "▶ Iniciar Monitor"
+
+Reproducir música en navegador
 
 Las canciones aparecerán automáticamente
 
-Usa "⬇ Descargar Todo" para guardar
+Usar "⬇ Descargar Todo" para guardar
 
-Configuración ⚙️
+## Configuración ⚙️
 Editar backend/core/config.ini:
 
-ini
-Copy
+```ini
 [settings]
 default_folder = ~/Music
-default_quality = 320
-theme = dark
-Preguntas Frecuentes ❓
-¿Dónde se guardan las descargas?
-En la carpeta seleccionada (por defecto ~/Downloads)
+default_quality = 320  # 64|128|192|256|320
+theme = dark  # dark|light|system
+```
 
-DISCLAIMER / DESCARGO DE RESPONSABILIDAD
-Uso Aceptable
-Esta aplicación está diseñada para:
+## ⚠️ Descargo de Responsabilidad
+Este software es para uso personal/educativo:
 
-Pruebas técnicas
+✅ Solo descarga contenido con derechos de uso
 
-Uso personal offline
+⚖️ Respeta Términos de YouTube
 
-Preservación de contenido propio
+🚫 No redistribuyas contenido descargado
 
-Restricciones
-❌ No está permitido:
+El desarrollador no asume responsabilidad por el mal uso.
 
-Descargar contenido protegido sin autorización
+## Capturas 📸
+| Interfaz Principal | Progreso de Descarga |
+|--------------------|---------------------|
+| Main UI | Progress |
 
-Redistribuir material descargado
-
-Usar para fines comerciales
-
-Responsabilidad
-El usuario es el único responsable del contenido que descarga.
-Este proyecto no almacena, distribuye ni fomenta la piratería.
-
-Consulta las leyes de copyright en tu país
-
-Licencia 📜
+## Licencia 📜
 MIT License - Ver LICENSE
 
-⚠️ Nota: Para el monitoreo automático, mantén el navegador Brave/Chrome abierto mientras reproduces música.
+Última actualización: 25/11/2023
