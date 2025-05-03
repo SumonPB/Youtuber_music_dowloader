@@ -408,7 +408,7 @@ class YouTubeDownloaderApp(ctk.CTk):
     def cargar_historial(self):
         """Carga el historial desde el archivo JSON"""
         try:
-            with open('historial.json', 'r') as f:
+            with open('historial.json', 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             return []
