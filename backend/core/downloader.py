@@ -4,31 +4,40 @@ import subprocess
 import os
 
 def descargar_audio(url: str, output_dir: str = "downloads", progress_hook=None) -> Path:
-    """Descarga audio con parámetro opcional de directorio y progreso"""
+    """Descarga audio desde YouTube y lo convierte a MP3."""
+    
+    # Opciones básicas
     ydl_opts = {
-        'format': 'bestaudio/best',
+        'format': 'bestaudio/best',  # mejor audio disponible
         'outtmpl': f'{output_dir}/%(title)s.%(ext)s',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '320',
-        }],
-        'noplaylist': True,
-        'quiet': True,
-        'no_warnings': True,
-        'ffmpeg_location': r'C:\ffmpeg\bin\ffmpeg.exe',
-        'retries': 3,
-        'progress_hooks': [progress_hook] if progress_hook else []
-    }
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '320',
+    }],
+    'noplaylist': True,
+    'quiet': True,
+    'no_warnings': True,
+    'ffmpeg_location': r'C:\ffmpeg\bin\ffmpeg.exe',
+    'retries': 3,
+    'progress_hooks': [progress_hook] if progress_hook else [],
+    'ignoreerrors': True,
+    'allow_unplayable_formats': True
+}
+
 
     try:
+        # Verifica que FFmpeg existe
         subprocess.run(
             [ydl_opts['ffmpeg_location'], '-version'],
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
-        
+
+        # Crear carpeta de salida si no existe
+        os.makedirs(output_dir, exist_ok=True)
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             filename = ydl.prepare_filename(info)
@@ -38,6 +47,7 @@ def descargar_audio(url: str, output_dir: str = "downloads", progress_hook=None)
         print(f"❌ Error al descargar {url}: {str(e)}")
         raise
     
+
 def obtener_info_video(url: str) -> dict:
     """Obtiene información del video sin descargarlo"""
     ydl_opts = {
