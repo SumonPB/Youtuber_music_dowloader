@@ -11,6 +11,7 @@ from backend.core.monitor import iniciar_monitor
 from backend.core.downloader import descargar_audio, obtener_info_video
 from backend.core.utils import es_url_nueva
 
+
 class ConfigManager:
     def __init__(self):
         self.config_path = Path(__file__).parent.parent / 'config.ini'
@@ -21,7 +22,7 @@ class ConfigManager:
                 'default_folder': str(Path.home() / 'Music'),
                 'default_quality': '320',
                 'theme': 'dark',
-                
+
                 # Monitor
                 'monitor_browser': 'brave',
                 'browser_path': 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
@@ -62,36 +63,38 @@ class ConfigManager:
         with open(self.config_path, 'w') as f:
             self.config.write(f)
 
+
 # Singleton para fácil acceso
 config = ConfigManager()
+
 
 class YouTubeDownloaderApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         # Cargar configuraciones
         self.load_config()
-        
+
         # barra de progreso
         self.downloading = False
         self.current_download = None
-        
+
         # Configuración de la ventana
         self.title("YouTube Music Downloader PRO")
         self.geometry("900x670")
         self._center_window()
         ctk.set_appearance_mode(self.theme.capitalize())
         ctk.set_default_color_theme("blue")
-        
+
         # Variables de estado
         self.monitor_active = False
         self.running = True
         self.historial = self.cargar_historial()
         self.current_songs = []
         self.url_queue = queue.Queue()
-        
+
         # Configurar interfaz
         self.setup_ui()
-        
+
         # Iniciar procesador de cola
         self.start_queue_processor()
 
@@ -101,7 +104,7 @@ class YouTubeDownloaderApp(ctk.CTk):
         self.download_folder = config.get('settings', 'default_folder')
         self.default_quality = config.get('settings', 'default_quality')
         self.theme = config.get('settings', 'theme')
-        
+
         # Configuración del monitor
         self.monitor_browser = config.get('settings', 'monitor_browser')
         self.browser_path = config.get('settings', 'browser_path')
@@ -115,7 +118,7 @@ class YouTubeDownloaderApp(ctk.CTk):
         config.set('settings', 'default_folder', self.download_folder)
         config.set('settings', 'default_quality', self.default_quality)
         config.set('settings', 'theme', self.theme.lower())
-        
+
         # Configuración del monitor
         config.set('settings', 'monitor_browser', self.monitor_browser)
         config.set('settings', 'browser_path', self.browser_path)
@@ -131,10 +134,10 @@ class YouTubeDownloaderApp(ctk.CTk):
         height = self.winfo_height()
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
-        
+
         x = (screen_width - width) // 5
         y = (screen_height - height) // 18
-        
+
         self.geometry(f'+{x}+{y}')
 
     def setup_ui(self):
@@ -142,12 +145,12 @@ class YouTubeDownloaderApp(ctk.CTk):
         # Frame principal
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
-        
+
         main_frame = ctk.CTkFrame(self)
         main_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
         main_frame.grid_rowconfigure(1, weight=1)
         main_frame.grid_columnconfigure(0, weight=1)
-        
+
         # Añadir barra de progreso
         self.progress_bar = ctk.CTkProgressBar(
             main_frame,
@@ -163,27 +166,27 @@ class YouTubeDownloaderApp(ctk.CTk):
             anchor="center"
         )
         self.progress_label.grid(row=8, column=0, sticky="ew", pady=(0, 10))
-        
+
         # Barra de título
         title_frame = ctk.CTkFrame(main_frame, height=50)
         title_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
         ctk.CTkLabel(
-            title_frame, 
-            text="🎵 YouTube Music Downloader", 
+            title_frame,
+            text="🎵 YouTube Music Downloader",
             font=("Arial", 20)
         ).pack(pady=10)
-        
+
         # Frame de configuración
         config_frame = ctk.CTkFrame(main_frame)
         config_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
-        
+
         # Selector de carpeta de descarga
         ctk.CTkLabel(
             config_frame,
             text="Carpeta de descarga:",
             font=("Arial", 12)
         ).pack(side="left", padx=(10, 5))
-        
+
         self.folder_path_label = ctk.CTkLabel(
             config_frame,
             text=self.download_folder,
@@ -193,14 +196,14 @@ class YouTubeDownloaderApp(ctk.CTk):
             justify="left"
         )
         self.folder_path_label.pack(side="left", fill="x", expand=True, padx=5)
-        
+
         ctk.CTkButton(
             config_frame,
             text="📁 Seleccionar",
             command=self.select_download_folder,
             width=100
         ).pack(side="right", padx=10)
-        
+
         # Lista de canciones
         self.song_list = ctk.CTkScrollableFrame(
             main_frame,
@@ -210,39 +213,39 @@ class YouTubeDownloaderApp(ctk.CTk):
         )
         self.song_list.grid(row=2, column=0, sticky="nsew", pady=(0, 10))
         self.song_list.grid_columnconfigure(0, weight=1)
-        
+
         # Barra de control
         control_frame = ctk.CTkFrame(main_frame, height=50)
         control_frame.grid(row=3, column=0, sticky="ew", pady=(10, 0))
-        
+
         # Botones
         self.monitor_btn = ctk.CTkButton(
-            control_frame, 
-            text="▶ Iniciar Monitor", 
+            control_frame,
+            text="▶ Iniciar Monitor",
             command=self.toggle_monitor
         )
         self.monitor_btn.pack(side="left", padx=5)
-        
+
         ctk.CTkButton(
-            control_frame, 
-            text="⚙ Configuración", 
+            control_frame,
+            text="⚙ Configuración",
             command=self.show_settings_dialog
         ).pack(side="left", padx=5)
-        
+
         ctk.CTkButton(
-            control_frame, 
-            text="✖ Limpiar Lista", 
+            control_frame,
+            text="✖ Limpiar Lista",
             command=self.clear_list,
             fg_color="#d9534f",
             hover_color="#c9302c"
         ).pack(side="right", padx=5)
-        
+
         ctk.CTkButton(
-            control_frame, 
-            text="⬇ Descargar Todo", 
+            control_frame,
+            text="⬇ Descargar Todo",
             command=self.download_all
         ).pack(side="right", padx=5)
-        
+
         # Barra de estado
         self.status_label = ctk.CTkLabel(
             main_frame,
@@ -250,20 +253,20 @@ class YouTubeDownloaderApp(ctk.CTk):
             anchor="w"
         )
         self.status_label.grid(row=4, column=0, sticky="ew", pady=(10, 0))
-        
+
         # Entrada manual
         self.url_entry = ctk.CTkEntry(
             main_frame,
             placeholder_text="Pega URL de YouTube aquí"
         )
         self.url_entry.grid(row=5, column=0, sticky="ew", pady=(10, 0))
-        
+
         ctk.CTkButton(
             main_frame,
             text="➕ Añadir Manualmente",
             command=self.add_manual_url
         ).grid(row=6, column=0, sticky="ew", pady=(5, 10))
-    
+
     def show_settings_dialog(self):
         """Muestra el diálogo de configuración"""
         dialog = ctk.CTkToplevel(self)
@@ -271,36 +274,36 @@ class YouTubeDownloaderApp(ctk.CTk):
         dialog.geometry("500x400")
         dialog.transient(self)
         dialog.grab_set()
-        
+
         # Pestañas
         tabview = ctk.CTkTabview(dialog)
         tabview.pack(fill="both", expand=True, padx=10, pady=10)
-        
+
         # Pestaña General
         general_tab = tabview.add("General")
-        
+
         # Carpeta de descarga
         ctk.CTkLabel(general_tab, text="Carpeta de descarga predeterminada:").pack(pady=(10, 0))
         folder_frame = ctk.CTkFrame(general_tab, fg_color="transparent")
         folder_frame.pack(fill="x", padx=5, pady=5)
-        
+
         self.settings_folder_entry = ctk.CTkEntry(folder_frame)
         self.settings_folder_entry.pack(side="left", fill="x", expand=True, padx=(0, 5))
         self.settings_folder_entry.insert(0, self.download_folder)
-        
+
         ctk.CTkButton(
             folder_frame,
             text="📁",
             width=30,
             command=lambda: self.select_settings_folder(dialog)
         ).pack(side="right")
-        
+
         # Calidad de descarga
         ctk.CTkLabel(general_tab, text="Calidad de audio predeterminada:").pack(pady=(10, 0))
         self.quality_var = ctk.StringVar(value=self.default_quality)
         quality_frame = ctk.CTkFrame(general_tab, fg_color="transparent")
         quality_frame.pack(fill="x", padx=5, pady=5)
-        
+
         qualities = ["320", "256", "192", "128"]
         for quality in qualities:
             ctk.CTkRadioButton(
@@ -309,7 +312,7 @@ class YouTubeDownloaderApp(ctk.CTk):
                 variable=self.quality_var,
                 value=quality
             ).pack(side="left", padx=5)
-        
+
         # Tema
         ctk.CTkLabel(general_tab, text="Tema de la aplicación:").pack(pady=(10, 0))
         self.theme_var = ctk.StringVar(value=self.theme.lower())
@@ -318,10 +321,10 @@ class YouTubeDownloaderApp(ctk.CTk):
             values=["dark", "light", "system"],
             variable=self.theme_var
         ).pack(fill="x", padx=5, pady=5)
-        
+
         # Pestaña Monitor
         monitor_tab = tabview.add("Monitor")
-        
+
         # Configuración del navegador
         ctk.CTkLabel(monitor_tab, text="Navegador para el monitor:").pack(pady=(10, 0))
         self.browser_var = ctk.StringVar(value=self.monitor_browser)
@@ -329,17 +332,17 @@ class YouTubeDownloaderApp(ctk.CTk):
             monitor_tab,
             textvariable=self.browser_var
         ).pack(fill="x", padx=5, pady=5)
-        
+
         # Botones
         button_frame = ctk.CTkFrame(dialog, fg_color="transparent")
         button_frame.pack(fill="x", padx=10, pady=10)
-        
+
         ctk.CTkButton(
             button_frame,
             text="Guardar",
             command=lambda: self.save_settings(dialog)
         ).pack(side="right", padx=5)
-        
+
         ctk.CTkButton(
             button_frame,
             text="Cancelar",
@@ -360,18 +363,18 @@ class YouTubeDownloaderApp(ctk.CTk):
         self.download_folder = self.settings_folder_entry.get()
         self.default_quality = self.quality_var.get()
         self.theme = self.theme_var.get()
-        
+
         # Configuración del monitor
         self.monitor_browser = self.browser_var.get()
-        
+
         # Aplicar cambios
         ctk.set_appearance_mode(self.theme.capitalize())
         self.folder_path_label.configure(text=self.download_folder)
         self.update_status()
-        
+
         # Guardar configuración
         self.save_config()
-        
+
         dialog.destroy()
         messagebox.showinfo("Configuración", "Los cambios se han guardado correctamente")
 
@@ -384,7 +387,7 @@ class YouTubeDownloaderApp(ctk.CTk):
             self.update_status()
             messagebox.showinfo("Carpeta seleccionada", f"Las descargas se guardarán en:\n{folder_selected}")
             self.save_config()
-    
+
     def start_queue_processor(self):
         """Procesa las URLs de la cola en el hilo principal"""
         def process_queue():
@@ -395,16 +398,16 @@ class YouTubeDownloaderApp(ctk.CTk):
                         self.after(0, self._safe_add_song, url)
                 except queue.Empty:
                     continue
-                
+
         threading.Thread(target=process_queue, daemon=True).start()
-    
+
     def _safe_add_song(self, url):
         """Versión segura de add_song para usar con after()"""
         try:
             self.add_song(url)
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo añadir canción: {str(e)}")
-    
+
     def cargar_historial(self):
         """Carga el historial desde el archivo JSON"""
         try:
@@ -412,7 +415,7 @@ class YouTubeDownloaderApp(ctk.CTk):
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError):
             return []
-    
+
     def guardar_historial(self):
         """Guarda el historial sin duplicados"""
         historial_actualizado = self.historial.copy()
@@ -432,24 +435,24 @@ class YouTubeDownloaderApp(ctk.CTk):
         if self.downloading:
             messagebox.showwarning("Advertencia", "No se puede modificar el monitor durante una descarga")
             return
-        
+
         self.monitor_active = not self.monitor_active
-    
+
         if self.monitor_active:
             self.monitor_btn.configure(text="⏸ Detener Monitor")
             threading.Thread(target=self.run_monitor, daemon=True).start()
         else:
             self.monitor_btn.configure(text="▶ Iniciar Monitor")
-    
+
         self.update_status()
-    
+
     def run_monitor(self):
         """Envía URLs a la cola en lugar de actualizar la GUI directamente"""
         for url in iniciar_monitor():
             if not self.monitor_active or self.downloading:  # Verificamos también downloading
                 break
             self.url_queue.put(url)
-    
+
     def add_song(self, url):
         """Añade canción a la lista mostrando título y URL"""
         try:
@@ -467,17 +470,17 @@ class YouTubeDownloaderApp(ctk.CTk):
             self.current_songs.append(song_data)
             self._safe_update_song_list()
             self.update_status()
-    
+
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo obtener información: {str(e)}")
-    
+
     def _safe_update_song_list(self):
         """Actualiza la lista de canciones con mejor visualización"""
         try:
             # Limpiar lista actual de forma segura
             for widget in self.song_list.winfo_children():
                 widget.destroy()
-            
+
             # Crear nuevos elementos con mejor formato
             for idx, song in enumerate(self.current_songs):
                 # Frame principal para cada canción
@@ -488,12 +491,12 @@ class YouTubeDownloaderApp(ctk.CTk):
                 )
                 song_frame.pack(fill="x", pady=3, padx=5)
                 song_frame.grid_columnconfigure(0, weight=1)
-                
+
                 # Contenedor para texto
                 text_frame = ctk.CTkFrame(song_frame, fg_color="transparent")
                 text_frame.grid(row=0, column=0, sticky="nsew", padx=5)
                 text_frame.grid_columnconfigure(0, weight=1)
-                
+
                 # Etiqueta para el título
                 title_label = ctk.CTkLabel(
                     text_frame,
@@ -503,7 +506,7 @@ class YouTubeDownloaderApp(ctk.CTk):
                     justify="left"
                 )
                 title_label.grid(row=0, column=0, sticky="ew")
-                
+
                 # Etiqueta para la URL
                 url_label = ctk.CTkLabel(
                     text_frame,
@@ -514,7 +517,7 @@ class YouTubeDownloaderApp(ctk.CTk):
                     text_color="#AAAAAA"
                 )
                 url_label.grid(row=1, column=0, sticky="ew", pady=(0, 5))
-                
+
                 # Botón para eliminar
                 delete_btn = ctk.CTkButton(
                     song_frame,
@@ -526,125 +529,142 @@ class YouTubeDownloaderApp(ctk.CTk):
                     hover_color="#c9302c"
                 )
                 delete_btn.grid(row=0, column=1, rowspan=2, padx=(5, 10), pady=5, sticky="ns")
-            
+
             # Ajustar el viewport del scrollable frame
-            self.song_list._parent_canvas.yview_moveto(0.0)
+            try:
+                self.song_list._parent_canvas.yview_moveto(0.0)
+            except Exception:
+                pass
+
             self.update_idletasks()
-            
+
         except Exception as e:
             print(f"Error en actualización de lista: {e}")
-        
+
     def add_manual_url(self):
         """Añade una URL manualmente"""
         url = self.url_entry.get().strip()
         if url:
             self.url_queue.put(url)
             self.url_entry.delete(0, "end")
-    
+
     def remove_song(self, index):
         """Elimina una canción de la lista"""
         if 0 <= index < len(self.current_songs):
             self.current_songs.pop(index)
             self._safe_update_song_list()
             self.update_status()
-    
+
     def clear_list(self):
         """Limpia toda la lista de canciones"""
         self.current_songs = []
         self._safe_update_song_list()
         self.update_status()
-    
+
     def download_all(self):
         if not self.current_songs:
             messagebox.showwarning("Advertencia", "No hay canciones para descargar")
             return
-        
+
         if self.downloading:
             messagebox.showwarning("Advertencia", "Ya hay una descarga en progreso")
             return
-            
+
         self.downloading = True
+        # Deshabilitar monitor y botón en hilo principal
         self.monitor_btn.configure(text="▶ Iniciar Monitor", state="disabled")
-        
-        # Configurar progreso
+
+        # Configurar progreso (en hilo principal)
         self.progress_bar.set(0)
         self.progress_label.configure(text="Preparando descargas...")
-        
+
         # Iniciar hilo de descarga
         threading.Thread(target=self._download_all_thread, daemon=True).start()
+
     def _download_all_thread(self):
         success_count = 0
         total = len(self.current_songs)
-    
-        for i, song in enumerate(self.current_songs, 1):
+
+        for i, song in enumerate(list(self.current_songs), 1):  # trabajar sobre copia segura
             if not self.downloading:
                 break
-            
-            self.current_download = song['titulo']
-            self._update_progress(i/total, f"Descargando: {song['titulo']}")
-        
+
+            self.current_download = song.get('titulo', song.get('url'))
+            # Actualizar progreso en hilo principal
+            self.after(0, self._update_progress, i/total, f"Descargando: {self.current_download}")
+
             try:
                 os.makedirs(self.download_folder, exist_ok=True)
                 archivo = descargar_audio(
-                    song['url'], 
+                    song['url'],
                     output_dir=self.download_folder,
                     progress_hook=self._download_progress_hook
                 )
-            
+
+                # Guardar en historial (solo datos) — la escritura en disco es segura desde hilo
                 self.historial.append({
                     'url': song['url'],
                     'titulo': song['titulo'],
                     'fecha': song['fecha'],
-                    'ruta': str(archivo.resolve())
+                    'ruta': str(Path(archivo).resolve())
                 })
                 success_count += 1
-            
+
             except Exception as e:
-                print(f"Error al descargar {song['titulo']}: {str(e)}")
-                self._update_progress(i/total, f"Error: {song['titulo']}")
-    
-        # Finalización
-        self.guardar_historial()
-        self._update_progress(1.0, f"Descargadas {success_count}/{total} canciones")
-        self.clear_list()
-        self.downloading = False
-        self.current_download = None
-    
-        self.after(0, lambda: messagebox.showinfo(
-            "Descarga completada",
-            f"Descargadas {success_count}/{total} canciones\nen: {self.download_folder}"
-        ))
-    
-        # Restaurar el estado del botón según el estado actual del monitor
-        if self.monitor_active:
-            self.monitor_btn.configure(text="⏸ Detener Monitor", state="normal")
-        else:
-            self.monitor_btn.configure(text="▶ Iniciar Monitor", state="normal")
+                print(f"Error al descargar {song.get('titulo','')}: {str(e)}")
+                # Mostrar error de progreso en GUI (hilo principal)
+                self.after(0, self._update_progress, i/total, f"Error: {song.get('titulo','')}")
+                # opcional: almacenar error en historial o log
+
+        # Finalización — todo en hilo principal usando after
+        def finish():
+            try:
+                self.guardar_historial()
+                self._update_progress(1.0, f"Descargadas {success_count}/{total} canciones")
+                self.clear_list()
+                self.downloading = False
+                self.current_download = None
+
+                messagebox.showinfo(
+                    "Descarga completada",
+                    f"Descargadas {success_count}/{total} canciones\nen: {self.download_folder}"
+                )
+
+                # Restaurar el estado del botón según el estado actual del monitor
+                if self.monitor_active:
+                    self.monitor_btn.configure(text="⏸ Detener Monitor", state="normal")
+                else:
+                    self.monitor_btn.configure(text="▶ Iniciar Monitor", state="normal")
+
+            except Exception as e:
+                print("Error en finish:", e)
+
+        self.after(0, finish)
 
     def _download_progress_hook(self, d):
         if d['status'] == 'downloading':
             percent = d.get('_percent_str', '0%').replace('%', '')
             try:
                 percent_float = float(percent)/100
-                self.after(0, self._update_progress, 
-                          percent_float, 
+                self.after(0, self._update_progress,
+                          percent_float,
                           f"Descargando {self.current_download}: {d.get('_percent_str', '')}")
             except ValueError:
                 pass
-        return True    
-    
+        return True
+
     def _update_progress(self, value, text):
         self.progress_bar.set(value)
         self.progress_label.configure(text=text)
         self.update_idletasks()
-    
+
     def update_status(self):
         """Actualiza la barra de estado"""
         status = "Monitor activo" if self.monitor_active else "Monitor detenido"
         self.status_label.configure(
             text=f"Estado: {status} | Canciones: {len(self.current_songs)} | Descargas en: {self.download_folder}"
         )
-    
+
     def on_close(self):
         """Método para cerrar la ventana de forma segura"""
         self.downloading = False
@@ -652,6 +672,7 @@ class YouTubeDownloaderApp(ctk.CTk):
         self.monitor_active = False
         self.save_config()  # Guardar configuraciones al cerrar
         self.destroy()
+
 
 if __name__ == "__main__":
     app = YouTubeDownloaderApp()

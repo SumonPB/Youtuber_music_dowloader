@@ -1,0 +1,31 @@
+# Byte-compiled / Python files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales
+venv/
+env/
+.venv/
+
+# Configuración local
+*.log
+
+# Archivos de descarga temporal de FFmpeg
+backend/core/ffmpeg-download.7z
+
+# FFmpeg completo (binarios y carpetas)
+backend/core/ffmpeg/
+
+# PyCharm / IDEs
+.idea/
+*.iml
+.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de historial o caché
+historial.json
+*.sqlite
