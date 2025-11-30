@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def iniciar_monitor():
-    """Monitor optimizado con configuración desde archivo"""
+    """Monitor optimizado usando el perfil real del usuario"""
     try:
         # Obtener configuración
         browser = config.get('settings', 'monitor_browser').lower()
@@ -39,15 +39,20 @@ def iniciar_monitor():
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-popup-blocking")
-        
-        # Configuración específica para Brave
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument("--disable-features=SameSiteByDefaultCookies,CookiesWithoutSameSiteMustBeSecure")
+        options.add_argument("--autoplay-policy=no-user-gesture-required")
+        options.add_argument("--disable-web-security")
+        options.add_argument("--allow-running-insecure-content")
+
+        # Configuración específica para Brave o Chrome
         if browser == 'brave':
             options.add_argument("--disable-brave-update")
             user_data = os.path.join(os.getenv('LOCALAPPDATA'), 'BraveSoftware', 'Brave-Browser', 'User Data')
-        else:  # Chrome u otros
+        else:
             user_data = os.path.join(os.getenv('LOCALAPPDATA'), 'Google', 'Chrome', 'User Data')
-        
-        # Configuración del perfil
+
+        # Perfil real
         options.add_argument(f"user-data-dir={user_data}")
         options.add_argument(f"profile-directory={user_profile}")
 
@@ -83,7 +88,6 @@ def iniciar_monitor():
             logger.info("🔍 Monitoreando YouTube...")
             logger.info(f"Configuración: Browser={browser}, Profile={user_profile}, Delay={monitor_delay}s")
             
-            # Variables de seguimiento
             ultima_url = None
             url_count = 0
             
@@ -104,11 +108,18 @@ def iniciar_monitor():
                             ultima_url = url_limpia
                             yield url_limpia
                             
+                    # Asegurar que el video siga reproduciéndose
+                    play_script = """
+                    var video = document.querySelector('video');
+                    if (video && video.paused) { video.play(); }
+                    """
+                    driver.execute_script(play_script)
+
                     time.sleep(monitor_delay)
                     
                 except Exception as e:
                     logger.warning(f"Error durante el monitoreo: {str(e)}")
-                    driver.refresh()
+                    # Solo esperar, no refrescar automáticamente
                     time.sleep(5)
                     
         except Exception as e:
