@@ -13,7 +13,7 @@ env/
 
 # Archivos de descarga temporal de FFmpeg
 backend/core/ffmpeg-download.7z
-
+chromedriver.log
 # FFmpeg completo (binarios y carpetas)
 backend/core/ffmpeg/
 
