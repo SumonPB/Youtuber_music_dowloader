@@ -592,14 +592,16 @@ class YouTubeDownloaderApp(ctk.CTk):
             self.current_download = song.get('titulo', song.get('url'))
             # Actualizar progreso en hilo principal
             self.after(0, self._update_progress, i/total, f"Descargando: {self.current_download}")
-
             try:
                 os.makedirs(self.download_folder, exist_ok=True)
                 archivo = descargar_audio(
                     song['url'],
                     output_dir=self.download_folder,
-                    progress_hook=self._download_progress_hook
-                )
+                    
+                    progress_hook=self._download_progress_hook,
+                    
+                    debug=False
+                )   
 
                 # Guardar en historial (solo datos) — la escritura en disco es segura desde hilo
                 self.historial.append({
@@ -642,16 +644,45 @@ class YouTubeDownloaderApp(ctk.CTk):
         self.after(0, finish)
 
     def _download_progress_hook(self, d):
-        if d['status'] == 'downloading':
-            percent = d.get('_percent_str', '0%').replace('%', '')
+        """
+        Hook seguro para recibir progreso desde yt-dlp
+        """
+
+        if d is None:
+            return
+
+        if not isinstance(d, dict):
+            return
+
+        status = d.get("status")
+
+        if status == "downloading":
+
+            percent_str = d.get("_percent_str", "0%")
+
             try:
-                percent_float = float(percent)/100
-                self.after(0, self._update_progress,
-                          percent_float,
-                          f"Descargando {self.current_download}: {d.get('_percent_str', '')}")
-            except ValueError:
+                percent = float(
+                    percent_str.replace("%", "").strip()
+                ) / 100
+
+                self.after(
+                    0,
+                    self._update_progress,
+                    percent,
+                    f"Descargando {self.current_download}: {percent_str}"
+                )
+
+            except Exception:
                 pass
-        return True
+
+        elif status == "finished":
+
+            self.after(
+                0,
+                self._update_progress,
+                1.0,
+                f"Procesando MP3: {self.current_download}"
+            )
 
     def _update_progress(self, value, text):
         self.progress_bar.set(value)

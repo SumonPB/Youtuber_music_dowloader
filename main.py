@@ -19,12 +19,12 @@ def ensure_ffmpeg_installed():
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-            print("✓ FFmpeg detectado correctamente.\n")
+            print("FFmpeg detectado correctamente.\n")
             return
         except:
-            print("⚠ FFmpeg encontrado pero da error, reinstalando...\n")
+            print("FFmpeg encontrado pero da error, reinstalando...\n")
 
-    print("❌ FFmpeg no encontrado, instalando...\n")
+    print("FFmpeg no encontrado, instalando...\n")
 
     installer = root / "backend" / "core" / "instal_ffmpeg.py"
 
@@ -34,16 +34,16 @@ def ensure_ffmpeg_installed():
     )
 
     if result.returncode != 0:
-        print("❌ No se pudo instalar FFmpeg")
+        print("No se pudo instalar FFmpeg")
         exit(1)
 
-    print("✓ FFmpeg instalado con éxito.\n")
+    print("FFmpeg instalado con exito.\n")
 
 
 if __name__ == "__main__":
     print("""
 ===========================================
-ADVERTENCIA: Solo para uso personal legítimo
+ADVERTENCIA: Solo para uso personal legitimo
 ===========================================
 """)
 

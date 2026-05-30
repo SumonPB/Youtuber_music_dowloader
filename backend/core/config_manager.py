@@ -32,7 +32,10 @@ class ConfigManager:
                 # Monitor
                 'monitor_browser': 'brave',
                 'browser_path': 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
-                'chromedriver_path': resource_path("backend/core/chromedriver.exe"),
+                # Dejar vacío para delegar en Selenium Manager (se descargará el driver adecuado)
+                'chromedriver_path': '',
+                # Archivo de cookies opcional (exportar desde el navegador en formato Netscape cookies.txt)
+                'cookies_file': '',
                 'user_profile': 'Default',
                 'monitor_delay': '5',
                 'debug_port': '9222'

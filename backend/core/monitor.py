@@ -27,8 +27,16 @@ def iniciar_monitor():
         # Validar rutas
         if not os.path.exists(browser_path):
             raise FileNotFoundError(f"Ruta del navegador no encontrada: {browser_path}")
-        if not os.path.exists(chromedriver_path):
-            raise FileNotFoundError(f"ChromeDriver no encontrado en: {chromedriver_path}")
+
+        # Si se ha configurado una ruta a ChromeDriver, úsala; si no, delega en Selenium Manager
+        if chromedriver_path:
+            if not os.path.exists(chromedriver_path):
+                raise FileNotFoundError(f"ChromeDriver no encontrado en: {chromedriver_path}")
+            use_selenium_manager = False
+            logger.info("Usando ChromeDriver explícito en configuración")
+        else:
+            use_selenium_manager = True
+            logger.info("No se especificó ChromeDriver: Selenium Manager gestionará el driver automáticamente")
 
         # Configuración de opciones
         options = Options()
@@ -56,11 +64,13 @@ def iniciar_monitor():
         options.add_argument(f"user-data-dir={user_data}")
         options.add_argument(f"profile-directory={user_profile}")
 
-        # Configuración del servicio
-        service = Service(
-            executable_path=chromedriver_path,
-            service_args=["--verbose", "--log-path=chromedriver.log"]
-        )
+        # Configuración del servicio (solo si se proporcionó chromedriver_path)
+        service = None
+        if not use_selenium_manager:
+            service = Service(
+                executable_path=chromedriver_path,
+                service_args=["--verbose", "--log-path=chromedriver.log"]
+            )
 
         # Inicializar driver con reintentos
         max_attempts = 3
@@ -69,7 +79,11 @@ def iniciar_monitor():
         
         while attempt < max_attempts:
             try:
-                driver = webdriver.Chrome(service=service, options=options)
+                # Si usamos Selenium Manager, no pasamos un Service con executable_path
+                if use_selenium_manager:
+                    driver = webdriver.Chrome(options=options)
+                else:
+                    driver = webdriver.Chrome(service=service, options=options)
                 break
             except Exception as e:
                 attempt += 1
